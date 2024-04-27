@@ -1,24 +1,33 @@
 import React, { useState, useRef } from 'react';
-import { Stage, Layer, Text, Image, Transformer } from 'react-konva';
+import { Stage, Layer, Text, Image, Transformer, Group } from 'react-konva';
 
 function Home() {
   const [shapes, setShapes] = useState([]);
   const [selectedShapeId, setSelectedShapeId] = useState(null);
   const textInputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const transformerRef = useRef();
 
   const addText = () => {
-    const id = Math.random().toString(36).substr(2, 9);
-    setShapes([...shapes, { type: 'text', text: 'Sample Text', id }]);
+    const text = textInputRef.current.value.trim();
+    if (text) {
+      const id = Math.random().toString(36).substr(2, 9);
+      setShapes([...shapes, { type: 'text', text, id }]);
+    }
+    textInputRef.current.value = '';
   };
 
-  const addImage = (url) => {
-    const id = Math.random().toString(36).substr(2, 9);
-    const img = new window.Image();
-    img.src = url;
-    img.onload = () => {
-      setShapes([...shapes, { type: 'image', image: img, id, x: 50, y: 50, width: 200, height: 200 }]);
-    };
+  const addImage = () => {
+    const url = imageInputRef.current.value.trim();
+    if (url) {
+      const id = Math.random().toString(36).substr(2, 9);
+      const img = new window.Image();
+      img.src = url;
+      img.onload = () => {
+        setShapes([...shapes, { type: 'image', image: img, id }]);
+      };
+    }
+    imageInputRef.current.value = '';
   };
 
   const handleDelete = () => {
@@ -48,8 +57,8 @@ function Home() {
               return (
                 <Text
                   key={shape.id}
-                  x={shape.x}
-                  y={shape.y}
+                  x={100}
+                  y={100}
                   text={shape.text}
                   fontSize={20}
                   fill="black"
@@ -60,46 +69,37 @@ function Home() {
               );
             } else if (shape.type === 'image') {
               return (
-                <React.Fragment key={shape.id}>
+                <Group key={shape.id}>
                   <Image
-                    x={shape.x}
-                    y={shape.y}
+                    x={100}
+                    y={100}
                     image={shape.image}
-                    width={shape.width}
-                    height={shape.height}
+                    width={200}
+                    height={200}
                     draggable
                     onClick={() => handleShapeClick(shape.id)}
                     stroke={selectedShapeId === shape.id ? '#007bff' : null}
                     strokeWidth={selectedShapeId === shape.id ? 2 : 0}
-                    onDragEnd={(event) => {
-                      const newShapes = shapes.map((sh) => {
-                        if (sh.id === shape.id) {
-                          return {
-                            ...sh,
-                            x: event.target.x(),
-                            y: event.target.y(),
-                          };
-                        }
-                        return sh;
-                      });
-                      setShapes(newShapes);
-                    }}
                   />
                   {selectedShapeId === shape.id && (
                     <Transformer
                       ref={transformerRef}
                       boundBoxFunc={(oldBox, newBox) => {
-                        // Limit resizing so it doesn't become too small
                         if (newBox.width < 20 || newBox.height < 20) {
                           return oldBox;
                         }
                         return newBox;
                       }}
-                      keepRatio={false}
-                      enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+                      selectedShapeProps={{
+                        stroke: '#007bff',
+                        strokeWidth: 3,
+                        strokeDashArray: [6, 2],
+                      }}
+                      keepRatio={true} // Allow resizing while keeping the aspect ratio
+                      rotateEnabled={false}
                     />
                   )}
-                </React.Fragment>
+                </Group>
               );
             }
             return null;
@@ -107,11 +107,12 @@ function Home() {
         </Layer>
       </Stage>
       <button onClick={handleDelete}>Delete Selected</button>
+      <input type="text" ref={textInputRef} placeholder="Enter text" />
       <button onClick={addText}>Add Text</button>
-      <input type="text" placeholder="Enter image URL" ref={textInputRef} />
-      <button onClick={() => addImage(textInputRef.current.value)}>Add Image</button>
+      <input type="text" ref={imageInputRef} placeholder="Enter image URL" />
+      <button onClick={addImage}>Add Image</button>
     </div>
   );
 }
 
-export default Home;
+export default Home;
